@@ -241,20 +241,86 @@ class MainWindow(QMainWindow):
 
     def add_to_display(self, value):
         current_text = self.display.text()
-        new_text = current_text + value
-        self.display.setText(new_text)
+        if current_text == "0" and value not in ['.', '+', '-', '*', '/']:
+            self.display.setText(value)
+        else:
+            new_text = current_text + value
+            self.display.setText(new_text)
+        
+        # Update expression display
+        self.expression_display.setText(self.display.text())
+
+    def add_function(self, func):
+        function_map = {
+            'sin': 'sin(',
+            'cos': 'cos(',
+            'tan': 'tan(',
+            'sqrt': 'sqrt('
+        }
+        current_text = self.display.text()
+        if current_text == "0":
+            self.display.setText(function_map.get(func, func + '('))
+        else:
+            self.display.setText(current_text + function_map.get(func, func + '('))
+        
+        # Update expression display
+        self.expression_display.setText(self.display.text())
 
     def clear_display(self):
-        self.display.clear()
+        self.display.setText("0")
+        self.expression_display.setText("")
+
+    def backspace(self):
+        current_text = self.display.text()
+        if len(current_text) > 1:
+            self.display.setText(current_text[:-1])
+        else:
+            self.display.setText("0")
+        
+        # Update expression display
+        self.expression_display.setText(self.display.text())
+
+    def negate(self):
+        current_text = self.display.text()
+        if current_text != "0":
+            if current_text.startswith('-'):
+                self.display.setText(current_text[1:])
+            else:
+                self.display.setText('-' + current_text)
+            
+            # Update expression display
+            self.expression_display.setText(self.display.text())
 
     def calculate_result(self):
         try:
             expression = self.display.text()
-            # Here you would call the evaluator to compute the result
-            # For now, we will just display the expression
-            self.result_label.setText(f"Result: {expression}")
+            # Store the expression for history
+            self.expression_display.setText(expression + " =")
+            
+            # Calculate the result
+            # For safety, we'll use eval with some basic validation
+            # In a production app, you'd want a more secure expression evaluator
+            if any(op in expression for op in ['+', '-', '*', '/', '(', ')']):
+                result = eval(expression)
+                
+                # Format the result
+                if isinstance(result, float):
+                    # Limit decimal places for cleaner display
+                    if result.is_integer():
+                        result = int(result)
+                    else:
+                        result = round(result, 8)
+                
+                # Update display with result
+                self.display.setText(str(result))
+            else:
+                # If it's just a number, keep it as is
+                pass
+                
         except Exception as e:
-            self.result_label.setText("Error")
+            self.display.setText("Error")
+            self.expression_display.setText("Invalid expression")
+            print(f"Calculation error: {e}")
 
     def closeEvent(self, event):
         event.accept()  # Accept the event to close the window
