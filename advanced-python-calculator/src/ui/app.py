@@ -1,16 +1,12 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5 import uic
 import sys
+from ui.views.main_window import MainWindow
 
-class CalculatorApp(QMainWindow):
+class CalculatorApp(MainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('src/ui/views/main_window.ui', self)
-        self.init_ui()
-
-    def init_ui(self):
-        # Initialize UI components and connect signals
-        pass
+        # The MainWindow class already sets up the UI
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
