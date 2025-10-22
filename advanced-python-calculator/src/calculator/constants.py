@@ -1,0 +1,5 @@
+PI = 3.141592653589793
+E = 2.718281828459045
+GOLDEN_RATIO = 1.618033988749895
+SPEED_OF_LIGHT = 299792458  # in meters per second
+GRAVITY = 9.80665  # in meters per second squared

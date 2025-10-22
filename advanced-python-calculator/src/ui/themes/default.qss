@@ -1,0 +1,65 @@
+QWidget {
+    background-color: #2E2E2E;
+    color: #FFFFFF;
+    font-family: 'Arial', sans-serif;
+}
+
+QPushButton {
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+QPushButton:hover {
+    background-color: #45a049;
+}
+
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #CCCCCC;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 18px;
+}
+
+QLineEdit:focus {
+    border: 1px solid #4CAF50;
+}
+
+QLabel {
+    font-size: 18px;
+}
+
+QFrame {
+    background-color: #3C3C3C;
+    border: 1px solid #444444;
+    border-radius: 5px;
+}
+
+QScrollArea {
+    background-color: #2E2E2E;
+}
+
+QScrollBar:vertical {
+    background: #3C3C3C;
+    width: 10px;
+}
+
+QScrollBar::handle:vertical {
+    background: #4CAF50;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #45a049;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background: none;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
