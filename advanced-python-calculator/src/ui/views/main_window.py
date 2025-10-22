@@ -1,8 +1,11 @@
+
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, 
                           QWidget, QPushButton, QLineEdit, QLabel, QGraphicsDropShadowEffect,
-                          QSizePolicy)
-from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize
-from PyQt5.QtGui import QColor, QFont, QIcon, QLinearGradient, QPalette, QBrush
+                          QSizePolicy, QGraphicsOpacityEffect, QSplashScreen)
+from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QSize, QTimer, QPoint, QRect, QSequentialAnimationGroup, QParallelAnimationGroup
+from PyQt5.QtGui import QColor, QFont, QIcon, QLinearGradient, QPalette, QBrush, QPixmap, QPainter, QRadialGradient
+import random
+import math
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -18,7 +21,87 @@ class MainWindow(QMainWindow):
                 color: #FFFFFF;
             }
         """)
-        self.initUI()
+        
+        # Show splash screen before initializing UI
+        self.show_splash_screen()
+        
+        # Animation properties
+        self.button_animations = {}
+        self.current_animation = None
+        self.particles = []
+        
+        # Initialize UI after splash screen
+        QTimer.singleShot(2500, self.initUI)
+        
+    def show_splash_screen(self):
+        # Create a cool splash screen
+        splash_pixmap = QPixmap(400, 600)
+        splash_pixmap.fill(Qt.transparent)
+        
+        painter = QPainter(splash_pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Create gradient background
+        gradient = QRadialGradient(200, 300, 300)
+        gradient.setColorAt(0, QColor(80, 20, 120))
+        gradient.setColorAt(0.5, QColor(40, 10, 80))
+        gradient.setColorAt(1, QColor(20, 5, 40))
+        
+        painter.setBrush(gradient)
+        painter.setPen(Qt.NoPen)
+        painter.drawRect(0, 0, 400, 600)
+        
+        # Draw app name
+        painter.setFont(QFont("Segoe UI", 36, QFont.Bold))
+        painter.setPen(QColor(255, 140, 0))
+        painter.drawText(QRect(0, 200, 400, 100), Qt.AlignCenter, "NeoCalc X")
+        
+        # Draw tagline
+        painter.setFont(QFont("Segoe UI", 14))
+        painter.setPen(QColor(200, 200, 200))
+        painter.drawText(QRect(0, 300, 400, 50), Qt.AlignCenter, "Next-Gen Calculator")
+        
+        # Draw some decorative elements
+        painter.setPen(Qt.NoPen)
+        for i in range(20):
+            x = random.randint(0, 400)
+            y = random.randint(0, 600)
+            size = random.randint(5, 20)
+            opacity = random.randint(50, 200)
+            painter.setBrush(QColor(255, 140, 0, opacity))
+            painter.drawEllipse(x, y, size, size)
+        
+        painter.end()
+        
+        # Create and show splash screen
+        self.splash = QSplashScreen(splash_pixmap, Qt.WindowStaysOnTopHint)
+        self.splash.show()
+        
+        # Create animation for splash screen elements
+        def animate_splash():
+            for i in range(10):
+                x = random.randint(0, 400)
+                y = random.randint(0, 600)
+                size = random.randint(5, 20)
+                
+                pixmap = QPixmap(splash_pixmap)
+                painter = QPainter(pixmap)
+                painter.setRenderHint(QPainter.Antialiasing)
+                
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QColor(255, 255, 255, 150))
+                painter.drawEllipse(x, y, size, size)
+                
+                painter.end()
+                
+                self.splash.setPixmap(pixmap)
+                QTimer.singleShot(i * 200, lambda p=pixmap: self.splash.setPixmap(p))
+        
+        # Start splash animation
+        QTimer.singleShot(100, animate_splash)
+        
+        # Close splash after delay
+        QTimer.singleShot(2500, self.splash.close)
 
     def initUI(self):
         # Create central widget with dark theme
@@ -195,11 +278,22 @@ class MainWindow(QMainWindow):
             ('=', 4, 3, 1, 1, self.calculate_result, "equals"),
         ]
         
-        # Add buttons to grid
+        # Add buttons to grid with animations
         for (text, row, col, rowspan, colspan, handler, style_type) in buttons:
             button = QPushButton(text)
             button.setStyleSheet(button_styles[style_type])
-            button.clicked.connect(handler)
+            
+            # Create a custom click handler that includes animation
+            def create_animated_handler(original_handler, btn):
+                def animated_handler():
+                    # Play button press animation
+                    self.animate_button_press(btn)
+                    # Call the original handler
+                    original_handler()
+                return animated_handler
+            
+            # Connect the animated handler
+            button.clicked.connect(create_animated_handler(handler, button))
             button_layout.addWidget(button, row, col, rowspan, colspan)
             
             # Add shadow effect to buttons
@@ -208,6 +302,13 @@ class MainWindow(QMainWindow):
             shadow.setColor(QColor(0, 0, 0, 50))
             shadow.setOffset(0, 3)
             button.setGraphicsEffect(shadow)
+            
+            # Store button for later animations
+            self.button_animations[text] = button
+            
+            # Add entrance animation for each button with delay based on position
+            delay = (row * 4 + col) * 50  # Staggered delay
+            QTimer.singleShot(2500 + delay, lambda b=button: self.animate_button_entrance(b))
         
         # Add button widget to main layout
         main_layout.addWidget(button_widget)
@@ -322,5 +423,177 @@ class MainWindow(QMainWindow):
             self.expression_display.setText("Invalid expression")
             print(f"Calculation error: {e}")
 
+    def animate_button_entrance(self, button):
+        """Create an entrance animation for buttons"""
+        # Save original position and size
+        original_geometry = button.geometry()
+        
+        # Create opacity effect
+        opacity_effect = QGraphicsOpacityEffect(button)
+        button.setGraphicsEffect(opacity_effect)
+        opacity_effect.setOpacity(0)
+        
+        # Create opacity animation
+        opacity_anim = QPropertyAnimation(opacity_effect, b"opacity")
+        opacity_anim.setDuration(300)
+        opacity_anim.setStartValue(0)
+        opacity_anim.setEndValue(1)
+        opacity_anim.setEasingCurve(QEasingCurve.OutCubic)
+        
+        # Create position animation
+        pos_anim = QPropertyAnimation(button, b"geometry")
+        pos_anim.setDuration(300)
+        
+        # Start from a random direction
+        direction = random.choice(["top", "bottom", "left", "right"])
+        start_geometry = QRect(original_geometry)
+        
+        if direction == "top":
+            start_geometry.moveTop(original_geometry.top() - 50)
+        elif direction == "bottom":
+            start_geometry.moveTop(original_geometry.top() + 50)
+        elif direction == "left":
+            start_geometry.moveLeft(original_geometry.left() - 50)
+        elif direction == "right":
+            start_geometry.moveLeft(original_geometry.left() + 50)
+        
+        pos_anim.setStartValue(start_geometry)
+        pos_anim.setEndValue(original_geometry)
+        pos_anim.setEasingCurve(QEasingCurve.OutBack)
+        
+        # Create animation group
+        anim_group = QParallelAnimationGroup()
+        anim_group.addAnimation(opacity_anim)
+        anim_group.addAnimation(pos_anim)
+        anim_group.start()
+    
+    def animate_button_press(self, button):
+        """Create a press animation for buttons"""
+        # Create scale animation
+        anim = QPropertyAnimation(button, b"geometry")
+        anim.setDuration(100)
+        
+        # Get current geometry
+        current_geometry = button.geometry()
+        
+        # Create a slightly smaller geometry for the "pressed" state
+        pressed_geometry = QRect(current_geometry)
+        pressed_geometry.setWidth(int(current_geometry.width() * 0.95))
+        pressed_geometry.setHeight(int(current_geometry.height() * 0.95))
+        pressed_geometry.moveCenter(current_geometry.center())
+        
+        # Set up the animation
+        anim.setStartValue(current_geometry)
+        anim.setEndValue(pressed_geometry)
+        anim.setEasingCurve(QEasingCurve.OutQuad)
+        
+        # Create the release animation
+        release_anim = QPropertyAnimation(button, b"geometry")
+        release_anim.setDuration(200)
+        release_anim.setStartValue(pressed_geometry)
+        release_anim.setEndValue(current_geometry)
+        release_anim.setEasingCurve(QEasingCurve.OutElastic)
+        
+        # Create sequential animation group
+        anim_group = QSequentialAnimationGroup()
+        anim_group.addAnimation(anim)
+        anim_group.addAnimation(release_anim)
+        anim_group.start()
+    
+    def animate_calculation(self):
+        """Create a calculation animation effect"""
+        # Create a particle effect around the display
+        for i in range(20):
+            # Create a particle label
+            particle = QLabel(self)
+            particle.setFixedSize(10, 10)
+            
+            # Random color
+            color = random.choice(["#FF8C00", "#4CAF50", "#2196F3", "#9C27B0"])
+            
+            # Set particle style
+            particle.setStyleSheet(f"""
+                background-color: {color};
+                border-radius: 5px;
+            """)
+            
+            # Random position around the display
+            display_rect = self.display.geometry()
+            x = display_rect.x() + random.randint(0, display_rect.width())
+            y = display_rect.y() + display_rect.height() + random.randint(-10, 10)
+            
+            particle.move(x, y)
+            particle.show()
+            
+            # Create animation
+            anim = QPropertyAnimation(particle, b"pos")
+            anim.setDuration(random.randint(500, 1500))
+            anim.setStartValue(QPoint(x, y))
+            
+            # Random end position
+            end_x = x + random.randint(-100, 100)
+            end_y = y + random.randint(-100, 100)
+            anim.setEndValue(QPoint(end_x, end_y))
+            
+            # Random curve
+            anim.setEasingCurve(random.choice([
+                QEasingCurve.OutQuad,
+                QEasingCurve.OutCubic,
+                QEasingCurve.OutQuart
+            ]))
+            
+            # Create opacity animation
+            opacity_effect = QGraphicsOpacityEffect(particle)
+            particle.setGraphicsEffect(opacity_effect)
+            
+            opacity_anim = QPropertyAnimation(opacity_effect, b"opacity")
+            opacity_anim.setDuration(random.randint(500, 1500))
+            opacity_anim.setStartValue(1.0)
+            opacity_anim.setEndValue(0.0)
+            
+            # Group animations
+            group = QParallelAnimationGroup()
+            group.addAnimation(anim)
+            group.addAnimation(opacity_anim)
+            
+            # Clean up when done
+            group.finished.connect(lambda p=particle: p.deleteLater())
+            
+            group.start()
+    
+    def calculate_result(self):
+        try:
+            expression = self.display.text()
+            # Store the expression for history
+            self.expression_display.setText(expression + " =")
+            
+            # Calculate the result
+            # For safety, we'll use eval with some basic validation
+            # In a production app, you'd want a more secure expression evaluator
+            if any(op in expression for op in ['+', '-', '*', '/', '(', ')']):
+                result = eval(expression)
+                
+                # Format the result
+                if isinstance(result, float):
+                    # Limit decimal places for cleaner display
+                    if result.is_integer():
+                        result = int(result)
+                    else:
+                        result = round(result, 8)
+                
+                # Play calculation animation
+                self.animate_calculation()
+                
+                # Update display with result
+                self.display.setText(str(result))
+            else:
+                # If it's just a number, keep it as is
+                pass
+                
+        except Exception as e:
+            self.display.setText("Error")
+            self.expression_display.setText("Invalid expression")
+            print(f"Calculation error: {e}")
+    
     def closeEvent(self, event):
         event.accept()  # Accept the event to close the window
